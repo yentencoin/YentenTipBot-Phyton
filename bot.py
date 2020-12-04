@@ -14,12 +14,16 @@ from datetime import datetime
 from decimal import Decimal
 
 from bitcoinutils.setup import setup
-from bitcoinutils.keys import P2wpkhAddress, PrivateKey
+#from bitcoinutils.keys import P2wpkhAddress, PrivateKey
+from bitcoinutils.keys import P2pkhAddress, PrivateKey, PublicKey
 from bitcoinutils.transactions import Transaction, TxInput, TxOutput
 from bitcoinutils.script import Script
 from bitcoinutils import constants
 
 from configs import config
+
+#chatid - 610906516 - lichka
+#-1001344678227 - rus chat
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
@@ -34,6 +38,7 @@ constants.NETWORK_P2SH_PREFIXES['mainnet'] = config.coin['P2SH_PREFIX']
 
 def help(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
@@ -45,8 +50,25 @@ def help(update, ctx):
             if not db.checkUser(str(user["id"])):
                 wif = genAddress()
                 db.addUser(str(user["username"]), str(user["id"]), str(wif))
-                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"[{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']}), You have been successfully registered", parse_mode="MarkdownV2")
-                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
+                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"[{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']}), Поздравляю! Вы успешно зарегестрировались. Попросите у людей монетку, они обязательно дадут.", parse_mode="MarkdownV2")
+                if checkRus(chatid):
+                    ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
+Приветище [{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']})\\. У нас есть следующие команды:
+1\\. /help
+2\\. /info
+3\\. /tip @user amount
+4\\. /deposit
+5\\. /balance
+6\\. /withdraw address amount
+7\\. /about
+                """, parse_mode="MarkdownV2")
+                    ctx.bot.send_message(chat_id=update.message.chat_id,
+                                     text="*Полезное: * Мы не рекомендуем майнить на данный адрес, т\\.к\\. монеты могут зависнуть из\\-за частых мелких переводов\\. "
+                                          "Скачайте полноценный yenten core кошелёк на свой компьютер: "
+                                          "[Yenten Core](https://github\\.com/yentencoin/yenten/releases)",
+                                     parse_mode="MarkdownV2")
+                else:
+                    ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
 Hey there [{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']})\\. Here are my commands:
 1\\. /help
 2\\. /info
@@ -56,13 +78,30 @@ Hey there [{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']})\
 6\\. /withdraw address amount
 7\\. /about
                 """, parse_mode="MarkdownV2")
-                ctx.bot.send_message(chat_id=update.message.chat_id,
+                    ctx.bot.send_message(chat_id=update.message.chat_id,
                                      text="*Please Note: * It is highly recommended that you do not directly mine to the "
                                           "address given by this bot\\. Download a full node here: "
-                                          "[Full Node](https://github\\.com/sugarchain\\-project/sugarchain/releases/latest)",
-                                     parse_mode="MarkdownV2")
+                                          "[Yenten Core](https://github\\.com/yentencoin/yenten/releases)",
+                                     parse_mode="MarkdownV2")                	
             else:
-                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
+                if checkRus(chatid):
+                    ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
+Приветище [{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']})\\. У нас есть следующие команды:
+1\\. /help
+2\\. /info
+3\\. /tip @user amount
+4\\. /deposit
+5\\. /balance
+6\\. /withdraw address amount
+7\\. /about
+                """, parse_mode="MarkdownV2")
+                    ctx.bot.send_message(chat_id=update.message.chat_id,
+                                     text="*Полезное: * Мы не рекомендуем майнить на данный адрес, т\\.к\\. монеты могут зависнуть из\\-за частых мелких переводов\\. "
+                                          "Скачайте полноценный yenten core кошелёк на свой компьютер: "
+                                          "[Yenten Core](https://github\\.com/yentencoin/yenten/releases)",
+                                     parse_mode="MarkdownV2")
+                else:
+                    ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
 Hey there [{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']})\\. Here are my commands:
 1\\. /help
 2\\. /info
@@ -72,17 +111,21 @@ Hey there [{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']})\
 6\\. /withdraw address amount
 7\\. /about
                 """, parse_mode="MarkdownV2")
-                ctx.bot.send_message(chat_id=update.message.chat_id,
+                    ctx.bot.send_message(chat_id=update.message.chat_id,
                                      text="*Please Note: * It is highly recommended that you do not directly mine to the "
                                           "address given by this bot\\. Download a full node here: "
-                                          "[Full Node](https://github\\.com/sugarchain\\-project/sugarchain/releases/latest)",
-                                     parse_mode="MarkdownV2")
+                                          "[Yenten Core](https://github\\.com/yentencoin/yenten/releases)",
+                                     parse_mode="MarkdownV2")                	
         else:
-            ctx.bot.send_message(chat_id=update.message.chat_id, text=f"[{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']}), please set a username before using this bot", parse_mode="MarkdownV2")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"[{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']}), пожалуйста зайдите в настройки telegram и настройте username перед началом использования бота", parse_mode="MarkdownV2")
+            else:
+            	tx.bot.send_message(chat_id=update.message.chat_id, text=f"[{escape_markdown(user['first_name'], 2)}](tg://user?id={user['id']}), please set a username before using this bot", parse_mode="MarkdownV2")
 
 
 def about(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
@@ -90,34 +133,50 @@ def about(update, ctx):
         ctx.bot.send_message(chat_id=update.message.chat_id,
                              text="""
 Hello there,
-I am the Sugarchain Telegram Tipbot, created by [salmaan1234](tg://user?id=905257225)\\. Run /help to see my full list of commands\\.
+I am the Sugarchain Telegram Tipbot, created by [salmaan1234](tg://user?id=905257225) and modified by Yentencoin\\. Run /help to see my full list of commands\\.
 This bot is fully [Open Source](https://github\\.com/Nugetzrul3/SugarchainTGBot)\\.
                              """, parse_mode="MarkdownV2")
 
 
 def info(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
+
+    #chatid=update.message.chat_id
+    #print(chatid)
+    #exit(0)
 
     if timestart < int(timestamp):
 
         price = requests.get(f"https://api.coingecko.com/api/v3/simple/price?ids={config.coin['coin_name']}&vs_currencies=usd,btc").json()
         info = requests.get(f"{config.apiUrl}/info").json()
 
-        btc = str(format(price["sugarchain"]["btc"], '.8f'))
-        usd = str(price["sugarchain"]["usd"])
+        btc = str(format(price["yenten"]["btc"], '.8f'))
+        usd = str(price["yenten"]["usd"])
 
         blocks = str(info['result']['blocks'])
         hash = formathash(int(info['result']['nethash']))
         diff = str(info['result']['difficulty'])
         supply = str(format(convertToSugar(info['result']['supply']), '.8f'))
 
-        ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
+        if checkRus(chatid):
+            ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
+Текущая высота блока: <code>{blocks}</code>
+Хешрейт сети: <code>{hash}</code>
+Сложноть сети: <code>{diff}</code>
+Current circulating supply: <code>{supply}</code> YENTEN
+Текущая цена {config.coin['ticker']}/BTC: {btc} BTC
+Текущая цена {config.coin['ticker']}/USD: ${usd}
+""", parse_mode="HTML")        	
+
+        else:	
+            ctx.bot.send_message(chat_id=update.message.chat_id, text=f"""
 Current block height: <code>{blocks}</code>
 Current network hashrate: <code>{hash}</code>
 Current network difficulty: <code>{diff}</code>
-Current circulating supply: <code>{supply}</code> SUGAR
+Current circulating supply: <code>{supply}</code> YENTEN
 Current {config.coin['ticker']}/BTC price: {btc} BTC
 Current {config.coin['ticker']}/USD price: ${usd}
 """, parse_mode="HTML")
@@ -125,6 +184,7 @@ Current {config.coin['ticker']}/USD price: ${usd}
 
 def tip(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
@@ -134,8 +194,12 @@ def tip(update, ctx):
         args = update.message.text.split(" ")
 
         if not db.checkUser(user["id"]):
-            ctx.bot.send_message(chat_id=update.message.chat_id,
-                                 text="It looks like you haven't registered yet. Please run /help first to register yourself")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id,
+                                 text="Похоже, вы еще не зарегистрировались. Пожалуйста запустите команду /help для регистрации")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id,
+                                 text="It looks like you haven't registered yet. Please run /help first to register yourself")            	
         else:
             target = None
             try:
@@ -151,11 +215,18 @@ def tip(update, ctx):
 
             if target is not None:
                 if not db.getUserID(target):
-                    ctx.bot.send_message(chat_id=update.message.chat_id,
-                                         text="Oops, looks like your sending to a user who hasn't registered. Ask them to do /help to register!\nPlease be mindful that usernames are case senstive. Make sure that the case of the target is correct.")
+                    if checkRus(chatid):
+                        ctx.bot.send_message(chat_id=update.message.chat_id,
+                                         text="Упс, похоже, вы отправляете пользователю, который не зарегистрировался. Попросите его сделать /help для регистрации!\nПомните, что имена пользователей чувствительны к регистру. Убедитесь, что большие и маленькие буквы введены правильно.")
+                    else:
+                        ctx.bot.send_message(chat_id=update.message.chat_id,
+                                         text="Oops, looks like your sending to a user who hasn't registered. Ask them to do /help to register!\nPlease be mindful that usernames are case senstive. Make sure that the case of the target is correct.")                        
                 else:
                     if user["username"] == target:
-                        ctx.bot.send_message(chat_id=update.message.chat_id, text="😆 You can't tip yourself!")
+                        if checkRus(chatid):
+                            ctx.bot.send_message(chat_id=update.message.chat_id, text="рџ† Вы не можете дать себе чаевые!")
+                        else:
+                            ctx.bot.send_message(chat_id=update.message.chat_id, text="рџ† You can't tip yourself!")
                     else:
                         if amount is not None:
                             if isFloat(amount):
@@ -167,23 +238,40 @@ def tip(update, ctx):
                                         ]
                                     ]
                                     reply_markup = InlineKeyboardMarkup(keyboard)
-                                    ctx.bot.send_message(chat_id=update.message.chat_id,
-                                                         text=f"You are about to send {amount} {config.coin['ticker']} with an additional fee of {format(float(config.coin['minFee']), '.8f')} SUGAR to @{target}. Please click Yes to confirm",
+                                    if checkRus(chatid):
+                                        ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                         text=f"Вы собираетесь отправить {amount} {config.coin['ticker']} с дополнительной комиссией в размере {format(float(config.coin['minFee']), '.8f')} YENTEN to @{target}. Пожалуйста, нажмите Yes, чтобы подтвердить",
                                                          reply_markup=reply_markup)
+                                    else:
+                                        ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                         text=f"You are about to send {amount} {config.coin['ticker']} with an additional fee of {format(float(config.coin['minFee']), '.8f')} YENTEN to @{target}. Please click Yes to confirm",
+                                                         reply_markup=reply_markup)                                    	
+                                else:
+                                    if checkRus(chatid):
+                                        ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                         text="Вы не можете отправлять отрицательные суммы или суммы меньше, чем 0.00001!")
+                                    else:
+                                        ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                         text="You cannot send negative amounts or amounts less than 0.00001!")                                	
+                            else:
+                                if checkRus(chatid):
+                                    ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                     text="Неверное количество YENTEN. Пожалуйста, попробуйте еще раз")
                                 else:
                                     ctx.bot.send_message(chat_id=update.message.chat_id,
-                                                         text="You cannot send negative amounts or amounts less than 0.00001!")
-                            else:
-                                ctx.bot.send_message(chat_id=update.message.chat_id,
-                                                     text="Invalid amount of SUGAR. Please try again")
+                                                     text="Invalid amount of YENTEN. Please try again")
                         else:
-                            ctx.bot.send_message(chat_id=update.message.chat_id, text="No amount specified!")
+                            if checkRus(chatid):
+                                ctx.bot.send_message(chat_id=update.message.chat_id, text="Сумма не указана!")
+                            else:
+                                ctx.bot.send_message(chat_id=update.message.chat_id, text="Сумма не указана!")
             else:
-                ctx.bot.send_message(chat_id=update.message.chat_id, text="No user specified!")
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="No amount specified!")
 
 
 def withdraw(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
@@ -193,12 +281,16 @@ def withdraw(update, ctx):
         args = update.message.text.split(" ")
 
         if not db.checkUser(user['id']):
-            ctx.bot.send_message(chat_id=update.message.chat_id,
-                                 text="It looks like you haven't registered yet. Please run /help first to register yourself")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id,
+                                 text="Похоже, вы еще не зарегистрировались. Пожалуйста, запустите /help сначала, чтобы зарегистрироваться")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id,
+                                 text="It looks like you haven't registered yet. Please run /help first to register yourself")            	
         else:
             address = None
             try:
-                address = str(args[1])[7:]
+                address = str(args[1])[1:]
             except IndexError:
                 address = address
 
@@ -209,7 +301,7 @@ def withdraw(update, ctx):
                 amount = amount
 
             if address is not None:
-                if checkAdd("sugar1q" + address):
+                if checkAdd("Y" + address):
                     if amount is not None:
                         if isFloat(amount):
                             if float(amount) > float(config.coin['minFee']):
@@ -220,23 +312,44 @@ def withdraw(update, ctx):
                                     ]
                                 ]
                                 reply_markup = InlineKeyboardMarkup(keyboard)
-                                ctx.bot.send_message(chat_id=update.message.chat_id,
-                                                     text=f"You are about to withdraw {amount} {config.coin['ticker']}, with a fee of {format(float(config.coin['minFee']), '.8f')} SUGAR to {'sugar1q' + address}. Please click Yes to confirm",
+                                if checkRus(chatid):
+                                    ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                     text=f"Вы собираетесь вывести {amount} {config.coin['ticker']}, с комиссией {format(float(config.coin['minFee']), '.8f')} YENTEN to {'Y' + address}. Пожалуйста, нажмите Yes, чтобы подтвердить",
+                                                     reply_markup=reply_markup)
+                                else:
+                                    ctx.bot.send_message(chat_id=update.message.chat_id,
+                                                     text=f"You are about to withdraw {amount} {config.coin['ticker']}, with a fee of {format(float(config.coin['minFee']), '.8f')} YENTEN to {'Y' + address}. Please click Yes to confirm",
                                                      reply_markup=reply_markup)
                             else:
-                                ctx.bot.send_message(chat_id=update.message.chat_id, text="You cannot withdraw negative amounts or amounts less than 0.00001")
+                                if checkRus(chatid):
+                                    ctx.bot.send_message(chat_id=update.message.chat_id, text="Вы не можете снимать отрицательные суммы или суммы меньше чем 0.00001")
+                                else:
+                                    ctx.bot.send_message(chat_id=update.message.chat_id, text="You cannot withdraw negative amounts or amounts less than 0.00001")
                         else:
-                            ctx.bot.send_message(chat_id=update.message.chat_id, text="The amount you have specified is not valid. Please try again.")
+                            if checkRus(chatid):
+                                ctx.bot.send_message(chat_id=update.message.chat_id, text="Указанная вами сумма недействительна. Пожалуйста, попробуйте еще раз.")
+                            else:
+                                ctx.bot.send_message(chat_id=update.message.chat_id, text="The amount you have specified is not valid. Please try again.")
                     else:
-                        ctx.bot.send_message(chat_id=update.message.chat_id, text="You did not specify the amount you wish to withdraw. Please try again")
+                        if checkRus(chatid):
+                            ctx.bot.send_message(chat_id=update.message.chat_id, text="Вы не указали сумму, которую хотите снять. Пожалуйста, попробуйте еще раз")
+                        else:
+                            ctx.bot.send_message(chat_id=update.message.chat_id, text="You did not specify the amount you wish to withdraw. Please try again")                        	
                 else:
-                    ctx.bot.send_message(chat_id=update.message.chat_id, text="You have specified an invalid withdraw address. Try again with a valid address.")
+                    if checkRus(chatid):
+                        ctx.bot.send_message(chat_id=update.message.chat_id, text="Вы указали неверный адрес для вывода средств. Повторите попытку с действительным адресом.")
+                    else:
+                        ctx.bot.send_message(chat_id=update.message.chat_id, text="You have specified an invalid withdraw address. Try again with a valid address.")
             else:
-                ctx.bot.send_message(chat_id=update.message.chat_id, text="No withdraw address specified")
+                if checkRus(chatid):
+                    ctx.bot.send_message(chat_id=update.message.chat_id, text="Адрес для вывода не указан")
+                else:
+                    ctx.bot.send_message(chat_id=update.message.chat_id, text="No withdraw address specified")
 
 
 def deposit(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
@@ -245,16 +358,23 @@ def deposit(update, ctx):
         user = update.message.from_user
 
         if not db.checkUser(user["id"]):
-            ctx.bot.send_message(chat_id=update.message.chat_id, text="It looks like you haven't registered yet. Please run /help first to register yourself")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="Похоже, вы еще не зарегистрировались. Пожалуйста, запустите /help сначала, чтобы зарегистрироваться")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="It looks like you haven't registered yet. Please run /help first to register yourself")
         else:
 
             address = getAddress(user["id"])
 
-            ctx.bot.send_message(chat_id=update.message.chat_id, text=f"Your deposit address: <code>{address}</code>", parse_mode="HTML")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"Ваш адрес хранения: (сюда можно положить монеты) <code>{address}</code>", parse_mode="HTML")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"Your deposit address: <code>{address}</code>", parse_mode="HTML")
 
 
 def balance(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
@@ -263,24 +383,39 @@ def balance(update, ctx):
         user = update.message.from_user
 
         if not db.checkUser(user["id"]):
-            ctx.bot.send_message(chat_id=update.message.chat_id, text="It looks like you haven't registered yet. Please run /help first to register yourself")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="Похоже, вы еще не зарегистрировались. Пожалуйста, запустите /help сначала, чтобы зарегистрироваться")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="It looks like you haven't registered yet. Please run /help first to register yourself")
         else:
             balance = getBalance(user["id"])
 
-            ctx.bot.send_message(chat_id=update.message.chat_id, text=f"You current balance: {balance} {config.coin['ticker']}")
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"Ваш текущий баланс: {balance} {config.coin['ticker']}")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id, text=f"You current balance: {balance} {config.coin['ticker']}")
 
 
 def export(update, ctx):
     gettime = str(update.message.date).split()
+    chatid=update.message.chat_id
     timetoconvert = gettime[0] + "T" + gettime[1]
     timestamp = strict_rfc3339.rfc3339_to_timestamp(timetoconvert)
 
     if timestart < int(timestamp):
         user = update.message.from_user
         if update.message.chat.type == "private":
-            ctx.bot.send_message(chat_id=update.message.chat_id, text=f"You're exported secret key: <code>{db.getWIF(user['id'])}</code>. <b>Important:</b> Do not share this key. If you do share this key, all your SUGAR will be lost.", parse_mode="HTML")
+        	if checkRus(chatid):
+        		#print("123")
+        		ctx.bot.send_message(chat_id=update.message.chat_id, text=f"Вы экспортировали секретный ключ: <code>{db.getWIF(user['id'])}</code>. <b>Important:</b> Do not share this key. If you do share this key, all your YENTEN will be lost.", parse_mode="HTML")
+        	else:
+        		ctx.bot.send_message(chat_id=update.message.chat_id, text=f"You're exported secret key: <code>{db.getWIF(user['id'])}</code>. <b>Important:</b> Do not share this key. If you do share this key, all your YENTEN will be lost.", parse_mode="HTML")
         else:
-            ctx.bot.send_message(chat_id=update.message.chat_id, text="This command only works in private messages."
+            if checkRus(chatid):
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="Эта команда работает только в личных сообщениях."
+                                                                      " Вместо этого отправьте мне личное сообщение :D")
+            else:
+                ctx.bot.send_message(chat_id=update.message.chat_id, text="This command only works in private messages."
                                                                       " Send me a private message instead :D")
 
 ### FUNCTIONS
@@ -324,6 +459,7 @@ def tip_or_withdrawFunc(update, ctx):
     query.answer()
     data = str(query.data).split(",")
     sender = str(query.from_user.id)
+    chatid=query.message.chat_id
     if sender == data[3]:
         if data[4] == "t":
             target = data[1]
@@ -332,8 +468,10 @@ def tip_or_withdrawFunc(update, ctx):
 
                 sender_wif = PrivateKey(db.getWIF(sender))
                 fee = convertToSatoshis(Decimal(config.coin['minFee']))
-                target_address = P2wpkhAddress(getAddress(target))
-                sender_address = P2wpkhAddress(getAddress(sender))
+                #target_address = P2wpkhAddress(getAddress(target))
+                target_address = P2pkhAddress(getAddress(target))
+                #sender_address = P2wpkhAddress(getAddress(sender))
+                sender_address = P2pkhAddress(getAddress(sender))
                 sender_balance = 0
                 amount = convertToSatoshis(Decimal(data[2])) + fee
 
@@ -344,24 +482,34 @@ def tip_or_withdrawFunc(update, ctx):
                     txin.append(TxInput(unspent[i]['txid'], unspent[i]['index']))
 
                 if sender_balance >= amount:
-
                     txout = []
-                    txout.append(TxOutput((amount - fee), target_address.to_script_pub_key()))
+                    txout=(TxOutput((amount - fee), Script(['OP_DUP', 'OP_HASH160', target_address.to_hash160(),
+                                  'OP_EQUALVERIFY', 'OP_CHECKSIG']) ))
 
                     txchange = sender_balance - amount
                     if txchange > 0:
-                        txout.append(TxOutput(txchange, sender_address.to_script_pub_key()))
+                        change_txout=(TxOutput(txchange, sender_address.to_script_pub_key()))
 
                     script_code = Script(['OP_DUP', 'OP_HASH160', sender_wif.get_public_key().to_hash160(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'])
 
-                    tx = Transaction(txin, txout, has_segwit=True)
+                    tx = Transaction(txin, [txout, change_txout])
 
-                    tx.witnesses = []
+                    # get public key as hex
+                    pk = sender_wif.get_public_key().to_hex()
+                    
+                    sigpk = []
 
                     for i in range(0, len(unspent)):
                         value = unspent[i]['value']
-                        sig = sender_wif.sign_segwit_input(tx, i, script_code, value)
-                        tx.witnesses.append(Script([sig, sender_wif.get_public_key().to_hex()]))
+                        sig = sender_wif.sign_input( tx, i, Script(['OP_DUP', 'OP_HASH160',
+                                           sender_address.to_hash160(), 'OP_EQUALVERIFY',
+                                           'OP_CHECKSIG']) )
+                        sigpk.append(Script([sig, pk]))
+                        txin[i].script_sig = sigpk[i]
+                        
+                    #signed_tx = tx.serialize()
+                    #print("\nRaw signed transaction:\n" + signed_tx)
+                    #exit(0)                        
 
                     post_data = {
                         'raw': tx.serialize()
@@ -369,14 +517,24 @@ def tip_or_withdrawFunc(update, ctx):
 
                     txid = requests.post(f"{config.apiUrl}/broadcast", data=post_data).json()['result']
 
-                    ctx.bot.send_message(chat_id=chID, text=f"Success, sent @{db.getUserName(data[1])} {data[2]} {config.coin['ticker']}.")
-                    ctx.bot.send_message(chat_id=chID, text=f"[View Transaction](https://sugar\\.wtf/esplora/tx/{str(txid)})", parse_mode="MarkdownV2")
+                    if checkRus(chatid):
+                        ctx.bot.send_message(chat_id=chID, text=f"Успешно, отправлено @{db.getUserName(data[1])} {data[2]} {config.coin['ticker']}.")
+                        ctx.bot.send_message(chat_id=chID, text=f"[Детали транзакции](https://ytn.ccore.online/transaction/{str(txid)})", parse_mode="MarkdownV2")
+                    else:
+                        ctx.bot.send_message(chat_id=chID, text=f"Success, sent @{db.getUserName(data[1])} {data[2]} {config.coin['ticker']}.")
+                        ctx.bot.send_message(chat_id=chID, text=f"[View Transaction](https://ytn.ccore.online/transaction/{str(txid)})", parse_mode="MarkdownV2")
                 else:
-                    ctx.bot.send_message(chat_id=chID, text="You do not have enough funds to tip that amount")
+                    if checkRus(chatid):
+                        ctx.bot.send_message(chat_id=chID, text="У вас недостаточно средств, чтобы дать эту сумму чаевых")
+                    else:
+                        ctx.bot.send_message(chat_id=chID, text="You do not have enough funds to tip that amount")
 
             elif data[0] == "N":
                 ctx.bot.delete_message(chat_id=chID, message_id=msgID)
-                ctx.bot.send_message(chat_id=chID, text=f"You declined sending @{db.getUserName(data[1])} {data[2]} {config.coin['ticker']}")
+                if checkRus(chatid):
+                    ctx.bot.send_message(chat_id=chID, text=f"Вы отказались от отправки @{db.getUserName(data[1])} {data[2]} {config.coin['ticker']}")
+                else:
+                    ctx.bot.send_message(chat_id=chID, text=f"You declined sending @{db.getUserName(data[1])} {data[2]} {config.coin['ticker']}")
 
         elif data[4] == "w":
             if data[0] == "Y":
@@ -384,10 +542,13 @@ def tip_or_withdrawFunc(update, ctx):
 
                 sender_wif = PrivateKey(db.getWIF(sender))
                 fee = convertToSatoshis(Decimal(config.coin['minFee']))
-                sender_address = P2wpkhAddress(getAddress(sender))
+                #sender_address = P2wpkhAddress(getAddress(sender))
+                sender_address = P2pkhAddress(getAddress(sender))
                 sender_balance = 0
                 amount = convertToSatoshis(Decimal(data[2])) + fee
-                target_address = P2wpkhAddress("sugar1q" + data[1])
+                #target_address = P2wpkhAddress("ytn1q" + data[1])
+                #target = data[1]
+                target_address = P2pkhAddress("Y" + data[1])
 
                 unspent = requests.get(f"{config.apiUrl}/unspent/{sender_address.to_string()}").json()['result']
 
@@ -399,22 +560,33 @@ def tip_or_withdrawFunc(update, ctx):
                 if sender_balance >= amount:
                     txout = []
                     
-                    txout.append(TxOutput((amount - fee), target_address.to_script_pub_key()))
+                    txout=(TxOutput((amount - fee), Script(['OP_DUP', 'OP_HASH160', target_address.to_hash160(),
+                                  'OP_EQUALVERIFY', 'OP_CHECKSIG']) ))
 
                     txchange = sender_balance - amount
                     if txchange > 0:
-                        txout.append(TxOutput(txchange, sender_address.to_script_pub_key()))
+                        change_txout=(TxOutput(txchange, sender_address.to_script_pub_key()))
 
                     script_code = Script(['OP_DUP', 'OP_HASH160', sender_wif.get_public_key().to_hash160(), 'OP_EQUALVERIFY', 'OP_CHECKSIG'])
 
-                    tx = Transaction(txin, txout, has_segwit=True)
+                    tx = Transaction(txin, [txout, change_txout])
 
-                    tx.witnesses = []
+                    # get public key as hex
+                    pk = sender_wif.get_public_key().to_hex()
+                    
+                    sigpk = []
 
                     for i in range(0, len(unspent)):
                         value = unspent[i]['value']
-                        sig = sender_wif.sign_segwit_input(tx, i, script_code, value)
-                        tx.witnesses.append(Script([sig, sender_wif.get_public_key().to_hex()]))
+                        sig = sender_wif.sign_input( tx, i, Script(['OP_DUP', 'OP_HASH160',
+                                           sender_address.to_hash160(), 'OP_EQUALVERIFY',
+                                           'OP_CHECKSIG']) )
+                        sigpk.append(Script([sig, pk]))
+                        txin[i].script_sig = sigpk[i]
+                        
+                    #signed_tx = tx.serialize()
+                    #print("\nRaw signed transaction:\n" + signed_tx)
+                    #exit(0)
 
                     post_data = {
                         'raw': tx.serialize()
@@ -422,13 +594,23 @@ def tip_or_withdrawFunc(update, ctx):
 
                     txid = requests.post(f"{config.apiUrl}/broadcast", data=post_data).json()['result']
 
-                    ctx.bot.send_message(chat_id=chID, text=f"Success, withdrew {data[2]} {config.coin['ticker']} to address {target_address.to_string()} ")
-                    ctx.bot.send_message(chat_id=chID, text=f"[View Transaction](https://sugar\\.wtf/esplora/tx/{str(txid)})", parse_mode="MarkdownV2")
+                    if checkRus(chatid):
+                        ctx.bot.send_message(chat_id=chID, text=f"Успех, сняли {data[2]} {config.coin['ticker']} to address {target_address.to_string()} ")
+                        ctx.bot.send_message(chat_id=chID, text=f"[Детали транзакции](https://ytn.ccore.online/transaction/{str(txid)})", parse_mode="MarkdownV2")
+                    else:
+                        ctx.bot.send_message(chat_id=chID, text=f"Success, withdrew {data[2]} {config.coin['ticker']} to address {target_address.to_string()} ")
+                        ctx.bot.send_message(chat_id=chID, text=f"[View Transaction](https://ytn.ccore.online/transaction/{str(txid)})", parse_mode="MarkdownV2")
                 else:
-                    ctx.bot.send_message(chat_id=chID, text="You do not have enough funds to withdraw the specified amount.")
+                    if checkRus(chatid):
+                        ctx.bot.send_message(chat_id=chID, text="У вас недостаточно средств для вывода указанной суммы.")
+                    else:
+                        ctx.bot.send_message(chat_id=chID, text="You do not have enough funds to withdraw the specified amount.")
             elif data[0] == "N":
                 ctx.bot.delete_message(chat_id=chID, message_id=msgID)
-                ctx.bot.send_message(chat_id=chID, text=f"You declined withdrawing {data[2]} {config.coin['ticker']} to address {'sugar1q' + data[1]}")
+                if checkRus(chatid):
+                    ctx.bot.send_message(chat_id=chID, text=f"Вы отказались снимать {data[2]} {config.coin['ticker']} to address {'Y' + data[1]}")
+                else:
+                    ctx.bot.send_message(chat_id=chID, text=f"You declined withdrawing {data[2]} {config.coin['ticker']} to address {'Y' + data[1]}")
 
 
 def getBalance(id: str):
@@ -440,8 +622,17 @@ def getBalance(id: str):
 
     return userBalance
 
+def checkRus(chatidd: str):
+    #print(chatidd)
+    if str(chatidd)==str("-1001344678227"):
+        #print("rus")
+        return True
+    else:
+        #print("eng")
+        return False
 
 def checkAdd(address: str):
+    #print(address)
     check = requests.get(f"{config.apiUrl}/balance/{address}").json()
 
     if check['error']:
@@ -459,7 +650,8 @@ def getAddress(id: str):
 
     pub = priv.get_public_key()
 
-    address = pub.get_segwit_address().to_string()
+    #address = pub.get_segwit_address().to_string()
+    address = pub.get_address().to_string()
 
     return address
 
